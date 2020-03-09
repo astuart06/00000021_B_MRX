@@ -57,17 +57,11 @@ unsigned int spi_data_tx[64];
 void __attribute__((__interrupt__, auto_psv)) _SPI1Interrupt(){
     static int i = 0; 
    
-    if(state == spi_request){
-        spi_data_rx[i++] = SPI1BUF;  
+    for(i = 0; i < 8; i++){
+        spi_data_rx[i] = SPI1BUF;
     }
-    else{
-        SPI1BUF;                    // Throw the data away if not in requeset
-    }                               // mode.    
-   
-   if(i > (SPI_PACKET_SIZE - 1)){   // Full packet rx'd from master, set the
-       state = spi_reply;           // mode to reply.
-       i = 0;                       
-   }                               
+        
+    state = spi_reply;                                
    
    IFS0bits.SPI1IF = 0;          // Clear the Interrupt flag.   
 }

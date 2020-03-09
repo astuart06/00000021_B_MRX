@@ -35,7 +35,7 @@ void spi_init(){
         
     SPI1STATbits.SPIROV = 0;    // Clear overflow flag.
     
-    SPI1STATbits.SISEL = 0b001; // Interrupt when data available is RX buffer.
+    SPI1STATbits.SISEL = 0b011; // Interrupt when data available is RX buffer.
     IPC2bits.SPI1IP = 0b111;    // Highest interrupt priority
     IFS0bits.SPI1IF = 0;        // Clear the Interrupt flag
     IEC0bits.SPI1IE = 1;        // Enable the interrupt    
@@ -55,20 +55,15 @@ void spi_init(){
 * 
  ******************************************************************************/
 void spi_tx_buffer_write(unsigned int *tx_data, unsigned int size_bytes){
-    unsigned int i;
+    unsigned int i, j;
     
     i = 0;
     while(i < size_bytes){
         if(!SPI1STATbits.SPITBF){       // Any space in tx buffer?
-            SPI1BUF = *tx_data;                   
+            SPI1BUF = (*tx_data)++;                   
             tx_data++;
             i++;
         }
-/*        
-        while(!SPI1STATbits.SRXMPT){    // Read and discard any data in the
-            SPI1BUF;                    // rx FIFO.
-        }                              
-*/
     }                                       
 }
 
@@ -85,10 +80,15 @@ void spi_tx_buffer_write(unsigned int *tx_data, unsigned int size_bytes){
  ******************************************************************************/
 void spi_fill_tx_buffer(int value){
     int i = 0;
+    int j;
     
-    while(!SPI1STATbits.SPITBF){
-        SPI1BUF = value;
-        i++;
+    while(i < 8){        
+        if(!SPI1STATbits.SPITBF){
+            SPI1BUF = value;
+            i++;
+        }
     }
+    j = 0;
+    j = i;
 }   
 
