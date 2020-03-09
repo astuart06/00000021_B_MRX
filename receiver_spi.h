@@ -15,7 +15,8 @@
 * FUNCTION PROTOTYPES
 *******************************************************************************/
 void spi_init(void);
-int spi_transfer(int data);
+void spi_fill_tx_buffer(int value);
+void spi_tx_buffer_write(unsigned int *tx_data, unsigned int size_bytes);
 
 #endif // RECEIVER_SPI_H
 

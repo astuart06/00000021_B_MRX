@@ -30,43 +30,53 @@
 * DEFINITIONS
 *******************************************************************************/
 #define TRIGGER_ADC     PORTBbits.PORTB7
-
 #define SRAM_IO_5       LATBbits.LATB5
 
+#define SPI_PACKET_SIZE 8
+
+enum device_state{
+    spi_request,
+    spi_reply} state;
 
 /*******************************************************************************
 * PROTOTYPES
 *******************************************************************************/
-void change_note_init(void);
-void __attribute__((__interrupt__, auto_psv)) _CNInterrupt();
 void __attribute__((__interrupt__, auto_psv)) _SPI1Interrupt();
+void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt();
 
 /*******************************************************************************c
 * GLOBAL VARIABLES
 *******************************************************************************/
-
-int int_count;
-int int_ignore;
+unsigned int spi_data_rx[8];
+unsigned int spi_data_tx[64];
 
 /*******************************************************************************
 * INTERRUPTS
 *******************************************************************************/
 
 void __attribute__((__interrupt__, auto_psv)) _SPI1Interrupt(){
-    unsigned int spi_rx_val;
-    
-    IFS0bits.SPI1IF = 0;        // Clear the Interrupt flag
-
-    spi_rx_val = SPI1BUF;
-    SPI1BUF = 0x10 + spi_rx_val;
+    static int i = 0; 
+   
+    if(state == spi_request){
+        spi_data_rx[i++] = SPI1BUF;  
+    }
+    else{
+        SPI1BUF;                    // Throw the data away if not in requeset
+    }                               // mode.    
+   
+   if(i > (SPI_PACKET_SIZE - 1)){   // Full packet rx'd from master, set the
+       state = spi_reply;           // mode to reply.
+       i = 0;                       
+   }                               
+   
+   IFS0bits.SPI1IF = 0;          // Clear the Interrupt flag.   
 }
+
 void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt(){    
     unsigned int adc_value;
     
     IFS0bits.INT0IF = 0;        // Clear the interrupt flag
-    
     adc_value = adc_read();
-    
 }
 
 /*******************************************************************************
@@ -76,10 +86,7 @@ int main() {
     
     int i;
     unsigned char j;
-    int temp;
     int toggle_state;
-    int result[4];
-    int send_data[4];
 
     ANSBbits.ANSB2 = 0;
     ANSBbits.ANSB4 = 0;
@@ -94,26 +101,28 @@ int main() {
     
     TRISBbits.TRISB4 = 1;           // CS as an input
     
-    send_data[1] = 0x11;
-    send_data[2] = 0x12;
-    send_data[3] = 0x13;
-    send_data[4] = 0x14;
-    
-    int_count = 0;
-    int_ignore = 0;
-    //spi_tx_val = 0x50;
+    spi_data_tx[0] = 0x60;
+    spi_data_tx[1] = 0x61;
+    spi_data_tx[2] = 0x62;
+    spi_data_tx[3] = 0x63;
+    spi_data_tx[4] = 0x64;
+    spi_data_tx[5] = 0x65;
+    spi_data_tx[6] = 0x66;
+    spi_data_tx[7] = 0x67;    
     
     adc_init();
-    spi_init();
-    
-    while(1);
-    
-    while(1){                  // Wait until CS goes low
-        for(i = 0; i < 8; i++){
-            result[i] = spi_transfer(i);
-            //while(!SPI1STATbits.SPIRBF);
-            //result[i] = SPI1BUF;
+    spi_init();                     
+    state = spi_request;        // First packet is always a request.
+    spi_fill_tx_buffer(0xF1);   // Dummy data for first request packet from
+                                // master.
+    while(1){
+        if(state == spi_reply){
+            spi_tx_buffer_write(spi_data_tx, 8);
+            spi_fill_tx_buffer(0xF1); 
+            state = spi_request;
         }
+    }
+    
 /*
         for(i = 0; i < 4; i++){
             SPI1STATbits.SPIROV = 0;
@@ -124,19 +133,8 @@ int main() {
         toggle_state = 0;
         toggle_state = 1;
 */
-      }
     
     return 0;
-}
-
-void change_note_init(void){
-    TRISBbits.TRISB4 = 1;           // RB12, pin23 is an input.
-    CNPD1bits.CN1PDE = 0;           // Pull down resistor disabled.
-    CNPU1bits.CN1PUE = 0;           // Pull up resistor disabled.
-    CNEN1bits.CN1IE = 1;            // Enable change notification.
-    IFS1bits.CNIF = 0;              // Clear interrupt flag.
-    IPC4bits.CNIP = 0b111;          // CN interrupt to highest priority.
-    IEC1bits.CNIE = 0;              // Enable CN interrupts.
 }
 
 
