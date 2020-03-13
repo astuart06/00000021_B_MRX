@@ -13,7 +13,7 @@
 /*******************************************************************************
 * FUNCTION PROTOTYPES
 *******************************************************************************/
-void adc_init(void);
+void peripheral_adc_init(void);
 int adc_read(void);
 
 #endif // RECEIVER_ADC_H

@@ -1,22 +1,30 @@
 // This is a guard condition so that contents of this file are not included
 // more than once.  
-#ifndef RECEIVER_SRAM_H
-#define	RECEIVER_SRAM_H
+#ifndef GLOBALS_H
+#define	GLOBALS_H
 
 #include "p24F16KA302.h"
-
+#include "xc.h"
 
 /*******************************************************************************
 * DEFINITIONS
 *******************************************************************************/
-#define SRAM_CS1    PORTBbits.RB6
 
 /*******************************************************************************
-* FUNCTION PROTOTYPES
+* ENUMS
 *******************************************************************************/
-void peripheral_sram_init(void);
-void sram_write(unsigned int data);
-unsigned int sram_read(void);
+enum device_state{
+    fsm_spi_rx_msg,
+    fsm_spi_tx_msg,
+    fsm_spi_msg_decode,
+    fsm_spi_error,
+    fsm_i2c_pot_inc,
+    fsm_i2c_pot_dec,
+    fsm_i2c_pot_read,
+    fsm_i2c_pot_write,
+    fsm_adc_aquisition,
+    fsm_adc_read,
+    } fsm_state;
 
 
-#endif // RECEIVER_SRAM_H
+#endif // GLOBALS_H

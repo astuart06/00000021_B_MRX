@@ -25,10 +25,9 @@
 * Returns:
 * None
  ******************************************************************************/
-void sram_init(){
+void peripheral_sram_init(){
     TRISBbits.TRISB6 = 0;       // CS pin as an output 
-    SRAM_CS1 = 0;               // and default to high (inactive state)
-    
+    SRAM_CS1 = 1;               // and default to high (inactive state)
 }
 
 /******************************************************************************

@@ -25,34 +25,30 @@
 * Returns:
 * None
  ******************************************************************************/
-void adc_init(){
-    // Set the resolution to 12-bits.
-    AD1CON1bits.MODE12 = 1;
-    // Unsigned result, right-justified.
-    AD1CON1bits.FORM = 0b00;
-    // Sample clock source select bits (0111 = internal counter)
-    AD1CON1bits.SSRC = 0b0111;
-    // Set the sample time before conversion starts (0b11111 = 31 Tad)
-    AD1CON3bits.SAMC = 0b11111;
-    // Set the ADC Vref+ to Vdd and Vref- to Vss.
-    AD1CON2bits.PVCFG = 0;
+void peripheral_adc_init(){
+    
+    AD1CON1bits.MODE12 = 1;     // Set the resolution to 12-bits.
+    AD1CON1bits.FORM = 0b00;    // Unsigned result, right-justified.
+    
+    AD1CON1bits.SSRC = 0b0001;  // INT0 event ends sampling and begins conv.
+    AD1CON3bits.SAMC = 0b11111; // Sampling time (SAMC * Tad).
+    AD1CON3bits.ADCS = 16;      // sample conversion clock(ADCS * Tcy).
+    AD1CON1bits.ASAM = 1;       // Automatic sampling.
+    
+    AD1CON2bits.PVCFG = 0;      // Set the ADC Vref+ to Vdd and Vref- to Vss.
     AD1CON2bits.NVCFG = 0;
-    // Set the sample conversion rate to 16 * Tcy (Tad = 1us).
-    AD1CON3bits.ADCS = 16;
-    // Set B12 as input and disable digital input buffer.
-    TRISBbits.TRISB12 = 1;
-    ANSBbits.ANSB12 = 1;
-    // Using MUX A set +ve input to AN12 and -ve input to Vss and always use
-    // MUX A.
-    AD1CHSbits.CH0SA = 12;
-    AD1CHSbits.CH0NA = 0;
+    
+    TRISBbits.TRISB12 = 1;      // Set B12 as input
+    ANSBbits.ANSB12 = 1;        //  and disable digital input buffer.
+    
+    AD1CHSbits.CH0SA = 12;      // Using MUX A set +ve input to AN12 and 
+    AD1CHSbits.CH0NA = 0;       // -ve input to Vss and always use MUX A.
     AD1CON2bits.ALTS = 0;
-    // Clear A/D conversion interrupt.
-    IFS0bits.AD1IF = 0;  
     
-    // Turn on the ADC module
-    AD1CON1bits.ADON = 1;
-    
+    IEC0bits.AD1IE = 0;         // Disable conversion complete interrupt.
+    IFS0bits.AD1IF = 0;         // Clear A/D conversion interrupt flag.
+   
+    AD1CON1bits.ADON = 1;       // Turn on the ADC module.
 }
 
 /******************************************************************************

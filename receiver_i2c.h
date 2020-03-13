@@ -14,7 +14,10 @@
 /*******************************************************************************
 * FUNCTION PROTOTYPES
 *******************************************************************************/
-void i2c_init(void);
+void peripheral_i2c_init(void);
+
+void pot_read_init();    
+
 void i2c_test_write(int addr_device);
 int i2c_test_read(void);
 void i2c_wait_for_idle(void);
