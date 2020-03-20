@@ -16,7 +16,8 @@
 *******************************************************************************/
 void peripheral_i2c_init(void);
 
-void pot_read_init();    
+void pot_read_init(void);    
+void pot_read_handler(void);
 
 void i2c_test_write(int addr_device);
 int i2c_test_read(void);

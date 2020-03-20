@@ -17,8 +17,9 @@
 #include "globals.h"
 #include "receiver_i2c.h"
 
+
 /******************************************************************************
-* spi_init
+* peripheral_spi_init
 * 
 * Description:
 * 
@@ -48,7 +49,7 @@ void peripheral_spi_init(){
 }
 
 /*******************************************************************************
-* spi_tx_buffer_write
+* spi_msg_rx_init
 * 
 * Description:
 * 
@@ -58,27 +59,85 @@ void peripheral_spi_init(){
 * Returns:
 * 
  ******************************************************************************/
-void spi_rx_msg_init(void){
+void spi_msg_rx_init(void){
     int i;
-    int spi_data_rx[7];
     
-    if(SPI1STATbits.SPIROV)     fsm_state = fsm_spi_error;  // Overflow?
-    if(!SPI1STATbits.SPIRBF)   return;                     // Buffer full?
-
-    for(i = 0; i < 8; i++){
+    if(SPI1STATbits.SPIROV)    return;      // Overflow condition?
+    if(!SPI1STATbits.SPIRBF)   return;      // Buffer full yet, quit if not?
+    
+    for(i = 0; i < 8; i++){                 // Grab all 8 bytes of packet.
         spi_data_rx[i] = SPI1BUF;
     }
     
-    if(spi_data_rx[7] == 0x65)  fsm_state = fsm_spi_error;  // Simple error check
-/*    
-    master_cmd = spi_data_rx[0];                        // First byte is cmd    
-
+    if(spi_data_rx[7] != 0x65)  return;     // Simple error check.
+    
+    SLAVE_BUSY = SLAVE_ACTIVE;              // Tell the master slave is busy.
+    master_cmd = spi_data_rx[0];            // First byte is cmd.  
+    
     switch(master_cmd){
         case cmd_pot_read:
             pot_read_init();
             break;
+            
+        case cmd_pot_write:
+            break;
+
+        case cmd_pot_inc:
+            break;
+            
+        case cmd_pot_dec:
+            break;
+            
+        case cmd_mem_read:
+            break;
+                        
+        case cmd_mem_write:
+            break;
+            
+        case cmd_data_acq:
+            break; 
     }
-*/
+}
+
+/*******************************************************************************
+* spi_msg_tx_init
+* 
+* Description:
+* 
+*
+* Inputs:
+*      
+* Returns:
+* 
+ ******************************************************************************/
+void spi_msg_tx_init(void){
+    fsm_state = fsm_spi_msg_tx;
+}
+
+/*******************************************************************************
+* spi_msg_tx_handler
+* 
+* Description:
+* 
+*
+* Inputs:
+*      
+* Returns:
+* 
+ ******************************************************************************/
+void spi_msg_tx_handler(void){
+    spi_data_tx[0] = 0x20;
+    spi_data_tx[1] = 0x21;
+    spi_data_tx[2] = 0x22;
+    spi_data_tx[3] = 0x23;
+    spi_data_tx[4] = 0x24;
+    spi_data_tx[5] = 0x25;
+    spi_data_tx[6] = 0x26;
+    spi_data_tx[7] = 0x27;
+    
+    SLAVE_BUSY = SLAVE_IDLE;     // Ready to tx, tell the master to clock SPI bus.
+    spi_tx_buffer_write(spi_data_tx, 8);   
+    fsm_state = fsm_spi_msg_rx;
 }
 
 /*******************************************************************************
@@ -92,7 +151,7 @@ void spi_rx_msg_init(void){
 * Returns:
 * 
  ******************************************************************************/
-void spi_tx_buffer_write(unsigned int *tx_data, unsigned int size_bytes){
+void spi_tx_buffer_write(unsigned char *tx_data, unsigned int size_bytes){
     unsigned int i;
     
     i = 0;
@@ -118,7 +177,6 @@ void spi_tx_buffer_write(unsigned int *tx_data, unsigned int size_bytes){
  ******************************************************************************/
 void spi_fill_tx_buffer(int value){
     int i = 0;
-    int j;
     
     while(i < 8){        
         if(!SPI1STATbits.SPITBF){
@@ -126,7 +184,5 @@ void spi_fill_tx_buffer(int value){
             i++;
         }
     }
-    j = 0;
-    j = i;
 }   
 

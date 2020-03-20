@@ -25,10 +25,6 @@
 /*******************************************************************************
 * DEFINITIONS
 *******************************************************************************/
-#define TRIGGER_ADC     PORTBbits.PORTB7
-#define ADC_DONE        PORTBbits.RB1
-#define SRAM_IO_5       LATBbits.LATB5
-
 #define SPI_PACKET_SIZE 8
 
 /*******************************************************************************
@@ -44,27 +40,17 @@ void peripheral_io_init(void);
 /*******************************************************************************c
 * GLOBAL VARIABLES
 *******************************************************************************/
-unsigned int spi_data_tx[64];
+enum device_state fsm_state; 
+enum spi_cmd master_cmd;
 
+unsigned char spi_data_tx[64];
+unsigned char spi_data_rx[8];
 /*******************************************************************************
 * INTERRUPTS
 *******************************************************************************/
-/*
-void __attribute__((__interrupt__, auto_psv)) _SPI1Interrupt(){
-    static int i = 0; 
-   
-    for(i = 0; i < 8; i++){
-        spi_data_rx[i] = SPI1BUF;
-    }
-    state = spi_reply;                                
-   
-   IFS0bits.SPI1IF = 0;          // Clear the Interrupt flag.   
-}
-*/
-
 void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt(){    
     // ADC conversion started automatically on +ve edge on INT0 (TRIGGER_ADC).
-    ADC_DONE = 1;           // Tell master we are busy, cleared in main loop.
+    //SLAVE_BUSY = 1;           // Tell master we are busy, cleared in main loop.
     
     IFS0bits.INT0IF = 0;        // Clear the interrupt flag    
 }
@@ -104,43 +90,40 @@ void peripheral_io_init(){
     ANSBbits.ANSB4 = 0;
     ODCB = 0;    
     
-    TRISBbits.TRISB4 = 1;           // CS as an input
-    TRISBbits.TRISB1 = 0;           // ADC_DONE as an output
+    TRISBbits.TRISB4 = 1;           // CS as an input.
+    
+    TRISBbits.TRISB1 = 0;           // SLAVE_BUSY as an output.
 }
 /*******************************************************************************
 * MAIN
 *******************************************************************************/
-int main() {        
-    spi_data_tx[0] = 0x60;
-    spi_data_tx[1] = 0x61;
-    spi_data_tx[2] = 0x62;
-    spi_data_tx[3] = 0x63;
-    spi_data_tx[4] = 0x64;
-    spi_data_tx[5] = 0x65;
-    spi_data_tx[6] = 0x66;
-    spi_data_tx[7] = 0x67;    
-    
+int main(){
+    int ts = 1;
     peripheral_io_init();
     peripheral_adc_init();
-    peripheral_spi_init();         
+    peripheral_spi_init();
     
     spi_fill_tx_buffer(0xF1);   // Dummy data for first request packet from
                                 // master.
     
-    fsm_state = fsm_spi_rx_msg;         // Initial state.
+    SLAVE_BUSY = SLAVE_IDLE;    
+    
+    fsm_state = fsm_spi_msg_rx; // Initial state (waiting for spi msg).
     while(1){
         switch(fsm_state){
-            case fsm_spi_rx_msg:
-                spi_rx_msg_init();
+            case fsm_spi_msg_rx:
+                spi_msg_rx_init();
                 break;
             
-            case fsm_spi_tx_msg:
+            case fsm_spi_msg_tx:
+                __delay_us(100);
+                spi_msg_tx_handler();                
                 break;
     
             case fsm_spi_msg_decode:
                 break;
                 
-            case fsm_spi_error:
+            case fsm_spi_msg_error:
                 break;
     
             case fsm_i2c_pot_inc:
@@ -150,6 +133,7 @@ int main() {
                 break;
                 
             case fsm_i2c_pot_read:
+                pot_read_handler();
                 break;
                 
             case fsm_i2c_pot_write:
