@@ -32,8 +32,8 @@ void peripheral_adc_init(){
     
     AD1CON1bits.SSRC = 0b0001;  // INT0 event ends sampling and begins conv.
     AD1CON3bits.SAMC = 0b11111; // Sampling time (SAMC * Tad).
-    AD1CON3bits.ADCS = 16;      // sample conversion clock(ADCS * Tcy).
-    AD1CON1bits.ASAM = 1;       // Automatic sampling.
+    AD1CON3bits.ADCS = 2;      // sample conversion clock(ADCS * Tcy).
+    AD1CON1bits.ASAM = 1;       // Start sampling automatically after last conv.
     
     AD1CON2bits.PVCFG = 0;      // Set the ADC Vref+ to Vdd and Vref- to Vss.
     AD1CON2bits.NVCFG = 0;
@@ -45,7 +45,8 @@ void peripheral_adc_init(){
     AD1CHSbits.CH0NA = 0;       // -ve input to Vss and always use MUX A.
     AD1CON2bits.ALTS = 0;
     
-    IEC0bits.AD1IE = 0;         // Disable conversion complete interrupt.
+    IEC0bits.AD1IE = 1;         // Disable conversion complete interrupt.
+    AD1CON2bits.SMPI = 0;       // Set interrupt flag for every conversion.
     IFS0bits.AD1IF = 0;         // Clear A/D conversion interrupt flag.
    
     AD1CON1bits.ADON = 1;       // Turn on the ADC module.

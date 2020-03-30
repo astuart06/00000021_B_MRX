@@ -18,6 +18,7 @@
 #include "receiver_adc.h"
 #include "receiver_i2c.h"
 #include "receiver_spi.h"
+#include "receiver_sram.h"
 
 #include "protocol.h"
 #include "globals.h"
@@ -30,30 +31,44 @@
 /*******************************************************************************
 * PROTOTYPES
 *******************************************************************************/
-void __attribute__((__interrupt__, auto_psv)) _SPI1Interrupt();
 void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt();
+void __attribute__((__interrupt__, auto_psv)) _ADC1Interrupt();
 
 void int0_init(void);
 void peripheral_io_init(void);
 
-
 /*******************************************************************************c
 * GLOBAL VARIABLES
 *******************************************************************************/
-enum device_state fsm_state; 
-enum spi_cmd master_cmd;
+device_state_t      fsm_state; 
+byte_cmd_t          host_cmd;
 
-unsigned char spi_data_tx[64];
-unsigned char spi_data_rx[8];
+unsigned char       spi_data_tx[64];
+unsigned char       spi_data_rx[8];
 /*******************************************************************************
 * INTERRUPTS
 *******************************************************************************/
-void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt(){    
+void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt(){
     // ADC conversion started automatically on +ve edge on INT0 (TRIGGER_ADC).
-    //SLAVE_BUSY = 1;           // Tell master we are busy, cleared in main loop.
+    // So just tell the master we are 'busy' and clear the flag.
+    // ***NOT CALLED AT THE MOMENT***
+    SLAVE_STATE = SLAVE_ACTIVE;
     
     IFS0bits.INT0IF = 0;        // Clear the interrupt flag    
 }
+
+void __attribute__((__interrupt__, auto_psv)) _ADC1Interrupt(){
+    unsigned int adc_value;
+    
+    SLAVE_STATE = SLAVE_ACTIVE;
+    
+    adc_value = ADC1BUF0;
+    sram_write(adc_value);
+    
+    SLAVE_STATE = SLAVE_IDLE;
+    IFS0bits.AD1IF = 0;        // Clear the interrupt flag    
+}
+
 
 /******************************************************************************
 * int0_init
@@ -98,15 +113,16 @@ void peripheral_io_init(){
 * MAIN
 *******************************************************************************/
 int main(){
-    int ts = 1;
     peripheral_io_init();
     peripheral_adc_init();
     peripheral_spi_init();
     
+    hardware_sram_init(SRAM_WRITE);
+    
     spi_fill_tx_buffer(0xF1);   // Dummy data for first request packet from
                                 // master.
     
-    SLAVE_BUSY = SLAVE_IDLE;    
+    SLAVE_STATE = SLAVE_IDLE;        
     
     fsm_state = fsm_spi_msg_rx; // Initial state (waiting for spi msg).
     while(1){
@@ -116,11 +132,11 @@ int main(){
                 break;
             
             case fsm_spi_msg_tx:
-                __delay_us(100);
+                //__delay_us(100);
                 spi_msg_tx_handler();                
                 break;
     
-            case fsm_spi_msg_decode:
+            case fsm_spi_msg_decode:        // Remove, done in spi_msg_rx??
                 break;
                 
             case fsm_spi_msg_error:
@@ -143,6 +159,10 @@ int main(){
                 break;
     
             case fsm_adc_read:
+                break;
+                
+            case fsm_sram_read:
+                sram_read_handler();
                 break;
         }
     }

@@ -10,7 +10,7 @@
 * DEFINITIONS
 *******************************************************************************/
 #define TRIGGER_ADC     PORTBbits.PORTB7
-#define SLAVE_BUSY      LATBbits.LATB1
+#define SLAVE_STATE     LATBbits.LATB1
 #define SRAM_IO_5       LATBbits.LATB5
 
 // These are opposite to the master as the open collector transistor on the
@@ -21,8 +21,8 @@
 /*******************************************************************************
 * ENUMS
 *******************************************************************************/
-enum device_state{
-    fsm_spi_msg_rx,
+typedef enum {
+    fsm_spi_msg_rx,         // This is also the idle state.
     fsm_spi_msg_tx,
     fsm_spi_msg_decode,
     fsm_spi_msg_error,
@@ -32,9 +32,10 @@ enum device_state{
     fsm_i2c_pot_write,
     fsm_adc_aquisition,
     fsm_adc_read,
-    };
+    fsm_sram_read
+    } device_state_t;
     
-extern enum device_state fsm_state; 
+extern device_state_t fsm_state; 
 
 extern unsigned char spi_data_rx[8];
 extern unsigned char spi_data_tx[64];
