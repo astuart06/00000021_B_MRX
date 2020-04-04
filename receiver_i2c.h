@@ -16,6 +16,8 @@
 *******************************************************************************/
 void peripheral_i2c_init(void);
 
+void digipot_handler(void);
+
 void pot_read_init(void);    
 void pot_read_handler(void);
 

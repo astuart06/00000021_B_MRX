@@ -38,6 +38,10 @@ void peripheral_i2c_init(){
     I2C2BRG = 0x9D;                     // Set I2C clock frequency to 100kHz
 }
 
+void digipot_handler(void){
+    
+}
+
 /******************************************************************************
 * pot_read_init
 * 
@@ -48,34 +52,13 @@ void peripheral_i2c_init(){
 * None      
 * Returns:
 * None
- ******************************************************************************/
-void pot_read_init(void){
-    fsm_state = fsm_i2c_pot_read;
-}
+******************************************************************************/
+//void pot_read_init(void){
+//    while(TRIGGER_ADC == 0);
+//    SLAVE_STATE = SLAVE_ACTIVE;
+//    fsm_state = fsm_i2c_pot_read;
+//}
 
-/******************************************************************************
-* pot_read_handler
-* 
-* Description:
-* 
-*
-* Inputs:
-* None      
-* Returns:
-* None
- ******************************************************************************/
-void pot_read_handler(void){
-    spi_data_tx[0] = 0x40;      // Hard code some return data.
-    spi_data_tx[1] = 0x41;
-    spi_data_tx[2] = 0x42;
-    spi_data_tx[3] = 0x43;
-    spi_data_tx[4] = 0x44;
-    spi_data_tx[5] = 0x45;
-    spi_data_tx[6] = 0x46;
-    spi_data_tx[7] = 0x47;
-    
-    spi_msg_tx_init();
-}
 
 /******************************************************************************
 * i2c_test_write

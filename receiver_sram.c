@@ -15,23 +15,22 @@
 #include "xc.h"
 
 #include "globals.h"
-
-#define TRIS_INPUT  1
-#define TRIS_OUTPUT 0
-
-
-void sram_read_init(void){
-    fsm_state = fsm_sram_read;    
-}
+#include "protocol.h"
+#include "receiver_spi.h"
 
 void sram_read_handler(void){
-    unsigned int value;
+    int i;
+    int count;
     
-    if(TRIGGER_ADC){
-        SLAVE_STATE = SLAVE_ACTIVE;
-        value = sram_read();
-                
+    count = spi_data_rx[USB_PACKET_RXBYTES];
+    
+    for(i = 0; i < count; i++){
+        while(TRIGGER_ADC == 0);        // Wait for trigger before beginning read.
+        SLAVE_STATE = SLAVE_ACTIVE;            
+        spi_data_tx[i] = (char)sram_read();
+        SLAVE_STATE = SLAVE_IDLE;
     }
+    // SRAM read complete, packet will be sent in ST_SPI_TX state.    
 }
 
 /******************************************************************************
@@ -49,12 +48,8 @@ void hardware_sram_init(int sram_mode){
     TRISBbits.TRISB6 = 0;       // SRAM CS pin as an output 
     SRAM_CS1 = 1;               // and default to high (inactive state),
                                 // also sets IO pins to high-Z.
-    if(sram_mode == SRAM_WRITE){
-        
-    }
-    else if(sram_mode == SRAM_READ){
-        
-    }
+
+    sram_IO_state(sram_mode);
 }
 
 /******************************************************************************
@@ -70,18 +65,18 @@ void hardware_sram_init(int sram_mode){
 * None
  ******************************************************************************/
 void sram_write(unsigned int data){   
-    LATAbits.LATA0  = data & (1U << 0);     // Bit 0 -  IO 0
-    LATAbits.LATA1  = data & (1U << 1);     // Bit 1 -  IO 1
-    LATAbits.LATA2  = data & (1U << 2);     // Bit 2 -  IO 2
-    LATAbits.LATA3  = data & (1U << 3);     // Bit 3 -  IO 3
-    LATAbits.LATA4  = data & (1U << 4);     // Bit 4 -  IO 4
-    LATBbits.LATB5  = data & (1U << 5);     // Bit 5 -  IO 5
-    LATAbits.LATA6  = data & (1U << 6);     // Bit 6 -  IO 6
-    LATAbits.LATA7  = data & (1U << 7);     // Bit 7 -  IO 7    
-    LATBbits.LATB8  = data & (1U << 8);     // Bit 8 -  IO 8
-    LATBbits.LATB9  = data & (1U << 9);     // Bit 9 -  IO 9
-    LATBbits.LATB14 = data & (1U << 10);    // Bit 10 - IO 10
-    LATBbits.LATB15 = data & (1U << 11);    // Bit 11 - IO 11
+    LATAbits.LATA0  = (data >> 0) & 1U;     // Bit 0 -  IO 0
+    LATAbits.LATA1  = (data >> 1) & 1U;     // Bit 1 -  IO 1
+    LATAbits.LATA2  = (data >> 2) & 1U;     // Bit 2 -  IO 2
+    LATAbits.LATA3  = (data >> 3) & 1U;     // Bit 3 -  IO 3
+    LATAbits.LATA4  = (data >> 4) & 1U;     // Bit 4 -  IO 4
+    LATBbits.LATB5  = (data >> 5) & 1U;     // Bit 5 -  IO 5
+    LATAbits.LATA6  = (data >> 6) & 1U;     // Bit 6 -  IO 6
+    LATAbits.LATA7  = (data >> 7) & 1U;     // Bit 7 -  IO 7    
+    LATBbits.LATB8  = (data >> 8) & 1U;     // Bit 8 -  IO 8
+    LATBbits.LATB9  = (data >> 9) & 1U;     // Bit 9 -  IO 9
+    LATBbits.LATB14 = (data >> 10) & 1U;    // Bit 10 - IO 10
+    LATBbits.LATB15 = (data >> 11) & 1U;    // Bit 11 - IO 11
     
     Nop();
     SRAM_CS1 = 0;   // Latch the data into memory using the CS signal.
@@ -90,7 +85,9 @@ void sram_write(unsigned int data){
 }
 
 unsigned int sram_read(void){
-    
+    // Temp return and incrementing number.
+    static unsigned int i = 0x00; 
+    return i++;
 }
 
 

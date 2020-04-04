@@ -12,10 +12,12 @@
 
 #include "stdio.h"
 #include <stdlib.h>
+#include <string.h>
 
 #include "protocol.h"
 #include "globals.h"
 #include "receiver_i2c.h"
+#include "receiver_sram.h"
 
 
 /******************************************************************************
@@ -45,11 +47,27 @@ void peripheral_spi_init(){
     IFS0bits.SPI1IF = 0;        // Clear the Interrupt flag.
     IEC0bits.SPI1IE = 0;        // Ensure interrupt is disabled.
     
-    SPI1STATbits.SPIEN = 1;     // Enable the SPI module. 
+    memset(spi_data_dummy, 0, USB_PACKET_MAX);
+                                // Write some know value to the dummy buffer.    
+    SPI1STATbits.SPIEN = 1;     // Enable the SPI module.    
+}
+
+unsigned char spi_rx_wait(void){   
+    spi_transfer(spi_data_dummy, spi_data_rx, 8);
+    return spi_data_rx[USB_PACKET_CMD];  // Return command byte.
+}
+
+void spi_tx_wait(void){
+    while(TRIGGER_ADC == 0);    // Wait until master sets trigger high.
+    SLAVE_STATE = SLAVE_ACTIVE; // Tell master we are active.   
+    Nop();
+    SLAVE_STATE = SLAVE_IDLE;     // Once set to idle, master will initiate SPI transfer.
+    
+    spi_transfer(spi_data_tx, spi_data_dummy, spi_data_rx[USB_PACKET_RXBYTES]);
 }
 
 /*******************************************************************************
-* spi_msg_rx_init
+* spi_transfer
 * 
 * Description:
 * 
@@ -59,61 +77,29 @@ void peripheral_spi_init(){
 * Returns:
 * 
  ******************************************************************************/
-void spi_msg_rx_init(void){
-    int i;
+void spi_transfer(unsigned char *tx_data, unsigned char *rx_data, unsigned int size_bytes){
+    unsigned int bytes_txd, bytes_rxd;
     
-    if(SPI1STATbits.SPIROV)    return;      // Overflow condition?
-    if(!SPI1STATbits.SPIRBF)   return;      // Buffer full yet? Quit if not.
-    
-    for(i = 0; i < 8; i++){                 // Grab all 8 bytes of packet.
-        spi_data_rx[i] = SPI1BUF;
+    bytes_txd = 0;
+    bytes_rxd = 0;
+      
+    while(1){
+        // SPITBF bit is clear when buffer available for write instruction.
+        if(!SPI1STATbits.SPITBF && (bytes_txd < size_bytes)){       
+            SPI1BUF = *tx_data;                   
+            tx_data++;
+            bytes_txd++;
+        }
+        // SPXMPT bit clear when the rx FIFO is not empty.
+        if(!SPI1STATbits.SRXMPT && (bytes_rxd < size_bytes)){
+            *rx_data = SPI1BUF;
+            rx_data++;
+            bytes_rxd++;
+        }
+        if((bytes_txd >= size_bytes) && (bytes_rxd >= size_bytes)){
+            break;
+        }
     }
-        
-    SLAVE_STATE = SLAVE_ACTIVE;              // Tell the master slave is busy.
-    host_cmd = spi_data_rx[USB_PACKET_CMD];  // First byte is cmd.  
-    
-    switch(host_cmd){
-        case cmd_pot_read:
-            pot_read_init();
-            break;
-            
-        case cmd_pot_write:
-            break;
-
-        case cmd_pot_inc:
-            break;
-            
-        case cmd_pot_dec:
-            break;
-            
-        case cmd_mem_read:
-            
-            break;
-                        
-        case cmd_mem_write:
-            break;
-            
-        case cmd_acq_en:
-            break;
-            
-        case cmd_adc_en:
-            break;
-    }
-}
-
-/*******************************************************************************
-* spi_msg_tx_init
-* 
-* Description:
-* 
-*
-* Inputs:
-*      
-* Returns:
-* 
- ******************************************************************************/
-void spi_msg_tx_init(void){
-    fsm_state = fsm_spi_msg_tx;
 }
 
 /*******************************************************************************
@@ -128,71 +114,7 @@ void spi_msg_tx_init(void){
 * 
  ******************************************************************************/
 void spi_msg_tx_handler(void){
-    spi_data_tx[0] = 0x60;
-    spi_data_tx[1] = 0x61;
-    spi_data_tx[2] = 0x62;
-    spi_data_tx[3] = 0x63;
-    spi_data_tx[4] = 0x64;
-    spi_data_tx[5] = 0x65;
-    spi_data_tx[6] = 0x66;
-    spi_data_tx[7] = 0x67;
-    spi_data_tx[8] = 0x80;
-    spi_data_tx[9] = 0x81;
-    spi_data_tx[10] = 0x82;
-    spi_data_tx[11] = 0x83;
-    spi_data_tx[12] = 0x84;
-    spi_data_tx[13] = 0x85;
-    spi_data_tx[14] = 0x86;
-    spi_data_tx[15] = 0x87;
     
     SLAVE_STATE = SLAVE_IDLE;     // Ready to tx, tell the master to clock SPI bus.
-    spi_tx_buffer_write(spi_data_tx, 16);   
-    fsm_state = fsm_spi_msg_rx;
+    spi_transfer(spi_data_tx, spi_data_dummy, 8);
 }
-
-/*******************************************************************************
-* spi_tx_buffer_write
-* 
-* Description: Blocking function, until all bytes sent.
-* 
-*
-* Inputs:
-*      
-* Returns:
-* 
- ******************************************************************************/
-void spi_tx_buffer_write(unsigned char *tx_data, unsigned int size_bytes){
-    unsigned int i;
-    
-    i = 0;
-    while(i < size_bytes){
-        if(!SPI1STATbits.SPITBF){       // Any space in tx buffer?
-            SPI1BUF = *tx_data;                   
-            tx_data++;
-            i++;
-        }
-    }                                       
-}
-
-/*******************************************************************************
-* spi_fill_tx_buffer
-* 
-* Description:
-* 
-*
-* Inputs:
-*      
-* Returns:
-* 
- ******************************************************************************/
-void spi_fill_tx_buffer(int value){
-    int i = 0;
-    
-    while(i < 8){        
-        if(!SPI1STATbits.SPITBF){
-            SPI1BUF = value;
-            i++;
-        }
-    }
-}   
-

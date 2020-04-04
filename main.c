@@ -11,10 +11,6 @@
 #include "p24F16KA302.h"
 #include "config.h"
 
-// Instruction cycle frequency, Hz - required for __delayXXX() to work
-#define  FCY    8000000UL
-#include "libpic30.h"
-
 #include "receiver_adc.h"
 #include "receiver_i2c.h"
 #include "receiver_spi.h"
@@ -40,11 +36,12 @@ void peripheral_io_init(void);
 /*******************************************************************************c
 * GLOBAL VARIABLES
 *******************************************************************************/
-device_state_t      fsm_state; 
-byte_cmd_t          host_cmd;
+device_state_t          next_state;
+device_event_t          next_event;
 
-unsigned char       spi_data_tx[64];
-unsigned char       spi_data_rx[8];
+unsigned char           spi_data_tx[USB_PACKET_MAX];
+unsigned char           spi_data_rx[8];
+unsigned char           spi_data_dummy[USB_PACKET_MAX];
 /*******************************************************************************
 * INTERRUPTS
 *******************************************************************************/
@@ -52,11 +49,12 @@ void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt(){
     // ADC conversion started automatically on +ve edge on INT0 (TRIGGER_ADC).
     // So just tell the master we are 'busy' and clear the flag.
     // ***NOT CALLED AT THE MOMENT***
-    SLAVE_STATE = SLAVE_ACTIVE;
+    //SLAVE_STATE = SLAVE_ACTIVE;
     
     IFS0bits.INT0IF = 0;        // Clear the interrupt flag    
 }
 
+// ADC1 interrupt occurs after every conversion is complete (SMPI = 0).
 void __attribute__((__interrupt__, auto_psv)) _ADC1Interrupt(){
     unsigned int adc_value;
     
@@ -68,7 +66,6 @@ void __attribute__((__interrupt__, auto_psv)) _ADC1Interrupt(){
     SLAVE_STATE = SLAVE_IDLE;
     IFS0bits.AD1IF = 0;        // Clear the interrupt flag    
 }
-
 
 /******************************************************************************
 * int0_init
@@ -105,9 +102,9 @@ void peripheral_io_init(){
     ANSBbits.ANSB4 = 0;
     ODCB = 0;    
     
-    TRISBbits.TRISB4 = 1;           // CS as an input.
-    
-    TRISBbits.TRISB1 = 0;           // SLAVE_BUSY as an output.
+    TRISBbits.TRISB4 = 1;           // CS as an input. 
+    TRISBbits.TRISB7 = 1;           // TRIGGER_ADC as an input.
+    TRISBbits.TRISB1 = 0;           // SLAVE_STATE as an output.
 }
 /*******************************************************************************
 * MAIN
@@ -116,53 +113,41 @@ int main(){
     peripheral_io_init();
     peripheral_adc_init();
     peripheral_spi_init();
+    peripheral_i2c_init();
     
-    hardware_sram_init(SRAM_WRITE);
+    hardware_sram_init(SRAM_WRITE); // Default to write mode. (remove when done by handler).
+      
+    SLAVE_STATE = SLAVE_IDLE;               
     
-    spi_fill_tx_buffer(0xF1);   // Dummy data for first request packet from
-                                // master.
-    
-    SLAVE_STATE = SLAVE_IDLE;        
-    
-    fsm_state = fsm_spi_msg_rx; // Initial state (waiting for spi msg).
-    while(1){
-        switch(fsm_state){
-            case fsm_spi_msg_rx:
-                spi_msg_rx_init();
-                break;
-            
-            case fsm_spi_msg_tx:
-                //__delay_us(100);
-                spi_msg_tx_handler();                
-                break;
-    
-            case fsm_spi_msg_decode:        // Remove, done in spi_msg_rx??
+    next_state = ST_SPI_RX;
+    while(1){      
+        switch(next_state){
+            case ST_SPI_RX:
+                next_event = spi_rx_wait();
+                // spi_rx_wait() is blocking so their will always be a new event.
+                if(next_event == EV_CMD_POT)    next_state = ST_DIGIPOT_RW;          
+                if(next_event == EV_CMD_SRAM)   next_state = ST_SRAM_READ;
+                if(next_event == EV_CMD_ADC)    next_state = ST_ADC_EN;
                 break;
                 
-            case fsm_spi_msg_error:
-                break;
-    
-            case fsm_i2c_pot_inc:
-                break;
-                
-            case fsm_i2c_pot_dec:
+            case ST_DIGIPOT_RW:
+                digipot_handler();
+                next_state = ST_SPI_TX;
                 break;
                 
-            case fsm_i2c_pot_read:
-                pot_read_handler();
-                break;
-                
-            case fsm_i2c_pot_write:
-                break;
-                
-            case fsm_adc_aquisition:
-                break;
-    
-            case fsm_adc_read:
-                break;
-                
-            case fsm_sram_read:
+            case ST_SRAM_READ:
                 sram_read_handler();
+                next_state = ST_SPI_TX;
+                break;
+                
+            case ST_ADC_EN:
+                adc_en_handler();
+                next_state = ST_SPI_TX;
+                break;             
+                
+            case ST_SPI_TX:
+                spi_tx_wait();
+                next_state = ST_SPI_RX;
                 break;
         }
     }

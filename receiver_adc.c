@@ -14,6 +14,9 @@
 #include <stdlib.h>
 #include "xc.h"
 
+#include "protocol.h"
+#include "globals.h"
+
 /******************************************************************************
 * adc_init
 * 
@@ -45,32 +48,23 @@ void peripheral_adc_init(){
     AD1CHSbits.CH0NA = 0;       // -ve input to Vss and always use MUX A.
     AD1CON2bits.ALTS = 0;
     
-    IEC0bits.AD1IE = 1;         // Disable conversion complete interrupt.
+    IEC0bits.AD1IE = 1;         // Enable conversion complete interrupt.
     AD1CON2bits.SMPI = 0;       // Set interrupt flag for every conversion.
     IFS0bits.AD1IF = 0;         // Clear A/D conversion interrupt flag.
    
-    AD1CON1bits.ADON = 1;       // Turn on the ADC module.
+    AD1CON1bits.ADON = 0;       // Module disabled, cmd from Host to turn it on.
 }
 
-/******************************************************************************
-* adc_read
-* 
-* Description:
-* 
-*
-* Inputs:
-* None      
-* Returns:
-* None
- ******************************************************************************/
-int adc_read(){
-    int adc_value;
+void adc_en_handler(void){
+    unsigned char state;
     
-    // Set the SAMP bit to start sampling
-    AD1CON1bits.SAMP = 1;
-    // Wait for the sampling and conversion  to finish.
-    while(!AD1CON1bits.DONE){};
-    adc_value = ADC1BUF0;
+    while(TRIGGER_ADC == 0);    // Wait until master sets trigger high.
+    SLAVE_STATE = SLAVE_ACTIVE; // Tell master we are active.   
+                               
+    state = spi_data_rx[USB_PACKET_DATA_0];     // Grab the enable bit.
+    state &= 1;                                 // Check it is just one bit.
     
-    return adc_value;
+    AD1CON1bits.ADON = state;                   // Enable the ADC module.
+    
+    SLAVE_STATE = SLAVE_IDLE;     // Once set to idle, master will initiate SPI transfer.
 }

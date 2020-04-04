@@ -6,12 +6,17 @@
 #include "p24F16KA302.h"
 #include "xc.h"
 
+#include "protocol.h"
+
+// Instruction cycle frequency, Hz - required for __delayXXX() to work
+#define  FCY    8000000UL
+#include "libpic30.h"
+
 /*******************************************************************************
 * DEFINITIONS
 *******************************************************************************/
-#define TRIGGER_ADC     PORTBbits.PORTB7
-#define SLAVE_STATE     LATBbits.LATB1
-#define SRAM_IO_5       LATBbits.LATB5
+#define TRIGGER_ADC     PORTBbits.RB7
+#define SLAVE_STATE     LATBbits.LATB1   
 
 // These are opposite to the master as the open collector transistor on the
 // output inverts the logic.
@@ -19,27 +24,28 @@
 #define SLAVE_IDLE      0
 
 /*******************************************************************************
+* VARIABLES
+*******************************************************************************/
+extern unsigned char spi_data_rx[USB_PACKET_SIZE];
+extern unsigned char spi_data_tx[USB_PACKET_MAX];
+extern unsigned char spi_data_dummy[USB_PACKET_MAX];
+
+/*******************************************************************************
 * ENUMS
 *******************************************************************************/
-typedef enum {
-    fsm_spi_msg_rx,         // This is also the idle state.
-    fsm_spi_msg_tx,
-    fsm_spi_msg_decode,
-    fsm_spi_msg_error,
-    fsm_i2c_pot_inc,
-    fsm_i2c_pot_dec,
-    fsm_i2c_pot_read,
-    fsm_i2c_pot_write,
-    fsm_adc_aquisition,
-    fsm_adc_read,
-    fsm_sram_read
-    } device_state_t;
+typedef enum{
+    EV_CMD_NONE,
+    EV_CMD_POT  = 0x10,
+    EV_CMD_SRAM = 0x11,
+    EV_CMD_ADC  = 0x12
+} device_event_t;
+
+typedef enum{
+    ST_SPI_RX,
+    ST_SPI_TX,
+    ST_DIGIPOT_RW,
+    ST_SRAM_READ,
+    ST_ADC_EN
+} device_state_t;
     
-extern device_state_t fsm_state; 
-
-extern unsigned char spi_data_rx[8];
-extern unsigned char spi_data_tx[64];
-
-
-
 #endif // GLOBALS_H
