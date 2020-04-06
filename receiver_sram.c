@@ -21,16 +21,24 @@
 void sram_read_handler(void){
     int i;
     int count;
+    unsigned int result;
+    unsigned char data_buffer[USB_PACKET_MAX];
     
     count = spi_data_rx[USB_PACKET_RXBYTES];
+    hardware_sram_init(SRAM_READ);
+    SRAM_CS1 = 0;
     
-    for(i = 0; i < count; i++){
+    for(i = 0; i < (count / 2); i++){
         while(TRIGGER_ADC == 0);        // Wait for trigger before beginning read.
-        SLAVE_STATE = SLAVE_ACTIVE;            
-        spi_data_tx[i] = (char)sram_read();
+        SLAVE_STATE = SLAVE_ACTIVE;
+        
+        result = sram_read();
+        data_buffer[2*i]        = result & 0xFF00;  // MSB
+        data_buffer[(2*i)+1]    = result & 0x00FF;  // LSB
+        
         SLAVE_STATE = SLAVE_IDLE;
     }
-    // SRAM read complete, packet will be sent in ST_SPI_TX state.    
+    spi_tx_wait_init(data_buffer, count);
 }
 
 /******************************************************************************
@@ -70,11 +78,15 @@ void sram_write(unsigned int data){
     LATAbits.LATA2  = (data >> 2) & 1U;     // Bit 2 -  IO 2
     LATAbits.LATA3  = (data >> 3) & 1U;     // Bit 3 -  IO 3
     LATAbits.LATA4  = (data >> 4) & 1U;     // Bit 4 -  IO 4
+    
     LATBbits.LATB5  = (data >> 5) & 1U;     // Bit 5 -  IO 5
+    
     LATAbits.LATA6  = (data >> 6) & 1U;     // Bit 6 -  IO 6
     LATAbits.LATA7  = (data >> 7) & 1U;     // Bit 7 -  IO 7    
+    
     LATBbits.LATB8  = (data >> 8) & 1U;     // Bit 8 -  IO 8
     LATBbits.LATB9  = (data >> 9) & 1U;     // Bit 9 -  IO 9
+    
     LATBbits.LATB14 = (data >> 10) & 1U;    // Bit 10 - IO 10
     LATBbits.LATB15 = (data >> 11) & 1U;    // Bit 11 - IO 11
     
@@ -85,9 +97,22 @@ void sram_write(unsigned int data){
 }
 
 unsigned int sram_read(void){
-    // Temp return and incrementing number.
-    static unsigned int i = 0x00; 
-    return i++;
+    unsigned long result, port_a_bits, port_b_bits;
+    unsigned long mask_a;
+    unsigned long mask_b_u, mask_b_l;
+    
+    mask_a      = 0x00DF;
+    mask_b_u    = 0xC000;   // IO10/IO11 on RB14/RB15
+    mask_b_l    = 0x0320;
+    
+    port_a_bits = (PORTA & mask_a);
+    
+    port_b_bits = (PORTB & mask_b_u) >> 4;
+    port_b_bits |=(PORTB & mask_b_l);
+    
+    result = port_a_bits | port_b_bits;
+    
+    return result;
 }
 
 

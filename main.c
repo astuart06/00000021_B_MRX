@@ -146,7 +146,7 @@ int main(){
                 break;             
                 
             case ST_SPI_TX:
-                spi_tx_wait();
+                spi_tx_wait_handler();
                 next_state = ST_SPI_RX;
                 break;
         }

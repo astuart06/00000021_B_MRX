@@ -57,7 +57,12 @@ unsigned char spi_rx_wait(void){
     return spi_data_rx[USB_PACKET_CMD];  // Return command byte.
 }
 
-void spi_tx_wait(void){
+void spi_tx_wait_init(unsigned char * data_buffer, int length){
+    memcpy(spi_data_tx, data_buffer, length);
+    next_state = ST_SPI_TX;
+}
+
+void spi_tx_wait_handler(void){
     while(TRIGGER_ADC == 0);    // Wait until master sets trigger high.
     SLAVE_STATE = SLAVE_ACTIVE; // Tell master we are active.   
     Nop();

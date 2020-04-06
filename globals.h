@@ -47,5 +47,8 @@ typedef enum{
     ST_SRAM_READ,
     ST_ADC_EN
 } device_state_t;
+
+extern device_event_t next_event;
+extern device_state_t next_state;
     
 #endif // GLOBALS_H
