@@ -22,6 +22,5 @@ void sram_read_handler(void);
 void hardware_sram_init(int sram_mode);
 void sram_write(unsigned int data);
 unsigned int sram_read(void);
-void sram_IO_state(int state);
 
 #endif // RECEIVER_SRAM_H

@@ -17,6 +17,9 @@
 #include "protocol.h"
 #include "globals.h"
 
+#include "receiver_sram.h"
+#include "receiver_spi.h"
+
 /******************************************************************************
 * adc_init
 * 
@@ -64,7 +67,12 @@ void adc_en_handler(void){
     state = spi_data_rx[USB_PACKET_DATA_0];     // Grab the enable bit.
     state &= 1;                                 // Check it is just one bit.
     
-    AD1CON1bits.ADON = state;                   // Enable the ADC module.
+    if(state == 1)  hardware_sram_init(SRAM_WRITE);  // Select write mode if the ADC is running.
+    else            hardware_sram_init(SRAM_READ);
+    
+    AD1CON1bits.ADON = state;                   // Enable/disable the ADC module.
     
     SLAVE_STATE = SLAVE_IDLE;     // Once set to idle, master will initiate SPI transfer.
+    spi_tx_wait_init(spi_data_rx, 8);
+    
 }

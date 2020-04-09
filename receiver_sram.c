@@ -38,6 +38,7 @@ void sram_read_handler(void){
         
         SLAVE_STATE = SLAVE_IDLE;
     }
+    SRAM_CS1 = 1;
     spi_tx_wait_init(data_buffer, count);
 }
 
@@ -56,8 +57,21 @@ void hardware_sram_init(int sram_mode){
     TRISBbits.TRISB6 = 0;       // SRAM CS pin as an output 
     SRAM_CS1 = 1;               // and default to high (inactive state),
                                 // also sets IO pins to high-Z.
-
-    sram_IO_state(sram_mode);
+    Nop();
+    Nop();
+    
+    TRISAbits.TRISA0    = sram_mode;
+    TRISAbits.TRISA1    = sram_mode;   
+    TRISAbits.TRISA2    = sram_mode;   
+    TRISAbits.TRISA3    = sram_mode;   
+    TRISAbits.TRISA4    = sram_mode;   
+    TRISBbits.TRISB5    = sram_mode;
+    TRISAbits.TRISA6    = sram_mode;   
+    TRISAbits.TRISA7    = sram_mode;   
+    TRISBbits.TRISB8    = sram_mode;   
+    TRISBbits.TRISB9    = sram_mode;   
+    TRISBbits.TRISB14   = sram_mode;  
+    TRISBbits.TRISB15   = sram_mode;
 }
 
 /******************************************************************************
@@ -91,7 +105,17 @@ void sram_write(unsigned int data){
     LATBbits.LATB15 = (data >> 11) & 1U;    // Bit 11 - IO 11
     
     Nop();
+    Nop();
+    Nop();
+    Nop();
+    Nop();
+    Nop();
     SRAM_CS1 = 0;   // Latch the data into memory using the CS signal.
+    Nop();
+    Nop();
+    Nop();
+    Nop();
+    Nop();
     Nop();
     SRAM_CS1 = 1;
 }
@@ -113,20 +137,4 @@ unsigned int sram_read(void){
     result = port_a_bits | port_b_bits;
     
     return result;
-}
-
-
-void sram_IO_state(int state){
-    TRISAbits.TRISA0    = state;
-    TRISAbits.TRISA1    = state;   
-    TRISAbits.TRISA2    = state;   
-    TRISAbits.TRISA3    = state;   
-    TRISAbits.TRISA4    = state;   
-    TRISBbits.TRISB5    = state;
-    TRISAbits.TRISA6    = state;   
-    TRISAbits.TRISA7    = state;   
-    TRISBbits.TRISB8    = state;   
-    TRISBbits.TRISB9    = state;   
-    TRISBbits.TRISB14   = state;  
-    TRISBbits.TRISB15   = state;  
 }

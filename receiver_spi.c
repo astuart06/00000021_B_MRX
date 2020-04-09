@@ -106,20 +106,3 @@ void spi_transfer(unsigned char *tx_data, unsigned char *rx_data, unsigned int s
         }
     }
 }
-
-/*******************************************************************************
-* spi_msg_tx_handler
-* 
-* Description:
-* 
-*
-* Inputs:
-*      
-* Returns:
-* 
- ******************************************************************************/
-void spi_msg_tx_handler(void){
-    
-    SLAVE_STATE = SLAVE_IDLE;     // Ready to tx, tell the master to clock SPI bus.
-    spi_transfer(spi_data_tx, spi_data_dummy, 8);
-}

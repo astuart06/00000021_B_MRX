@@ -57,11 +57,13 @@ void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt(){
 // ADC1 interrupt occurs after every conversion is complete (SMPI = 0).
 void __attribute__((__interrupt__, auto_psv)) _ADC1Interrupt(){
     unsigned int adc_value;
+    static unsigned int dummy_adc_value = 0;
     
     SLAVE_STATE = SLAVE_ACTIVE;
     
     adc_value = ADC1BUF0;
-    sram_write(adc_value);
+    sram_write(dummy_adc_value);
+    dummy_adc_value++;
     
     SLAVE_STATE = SLAVE_IDLE;
     IFS0bits.AD1IF = 0;        // Clear the interrupt flag    
@@ -102,7 +104,7 @@ void peripheral_io_init(){
     ANSBbits.ANSB4 = 0;
     ODCB = 0;    
     
-    TRISBbits.TRISB4 = 1;           // CS as an input. 
+    TRISBbits.TRISB4 = 1;           // SPI CS as an input. 
     TRISBbits.TRISB7 = 1;           // TRIGGER_ADC as an input.
     TRISBbits.TRISB1 = 0;           // SLAVE_STATE as an output.
 }
@@ -116,7 +118,7 @@ int main(){
     peripheral_i2c_init();
     
     hardware_sram_init(SRAM_WRITE); // Default to write mode. (remove when done by handler).
-      
+    
     SLAVE_STATE = SLAVE_IDLE;               
     
     next_state = ST_SPI_RX;
@@ -137,12 +139,10 @@ int main(){
                 
             case ST_SRAM_READ:
                 sram_read_handler();
-                next_state = ST_SPI_TX;
                 break;
                 
             case ST_ADC_EN:
-                adc_en_handler();
-                next_state = ST_SPI_TX;
+                adc_en_handler();                
                 break;             
                 
             case ST_SPI_TX:
