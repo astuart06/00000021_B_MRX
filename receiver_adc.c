@@ -61,18 +61,19 @@ void peripheral_adc_init(){
 void adc_en_handler(void){
     unsigned char state;
     
-    while(TRIGGER_ADC == 0);    // Wait until master sets trigger high.
-    SLAVE_STATE = SLAVE_ACTIVE; // Tell master we are active.   
-                               
     state = spi_data_rx[USB_PACKET_DATA_0];     // Grab the enable bit.
     state &= 1;                                 // Check it is just one bit.
     
-    if(state == 1)  hardware_sram_init(SRAM_WRITE);  // Select write mode if the ADC is running.
-    else            hardware_sram_init(SRAM_READ);
+    if(state == 1){
+        hardware_sram_init(SRAM_WRITE);  // Select SRAM write mode if the ADC is running.
+        TRISBbits.TRISB1 = 0;
+    }  
+    else{
+        hardware_sram_init(SRAM_READ);  
+        TRISBbits.TRISB1 = 1;
+    }
     
     AD1CON1bits.ADON = state;                   // Enable/disable the ADC module.
     
-    SLAVE_STATE = SLAVE_IDLE;     // Once set to idle, master will initiate SPI transfer.
     spi_tx_wait_init(spi_data_rx, 8);
-    
 }

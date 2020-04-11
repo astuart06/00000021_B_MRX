@@ -19,7 +19,7 @@
 #include "receiver_spi.h"
 
 void sram_read_handler(void){
-    int i;
+    unsigned int i;
     int count;
     unsigned int result;
     unsigned char data_buffer[USB_PACKET_MAX];
@@ -30,14 +30,15 @@ void sram_read_handler(void){
     
     for(i = 0; i < (count / 2); i++){
         while(TRIGGER_ADC == 0);        // Wait for trigger before beginning read.
-        SLAVE_STATE = SLAVE_ACTIVE;
+        SLAVE_STATE = SLAVE_ACTIVE;        
         
-        result = sram_read();
-        data_buffer[2*i]        = result & 0xFF00;  // MSB
-        data_buffer[(2*i)+1]    = result & 0x00FF;  // LSB
+        result = sram_read();        
+        data_buffer[2*i]        = (result & 0xFF00) >> 8; // MSB
+        data_buffer[(2*i)+1]    = result & 0x00FF;      // LSB
         
         SLAVE_STATE = SLAVE_IDLE;
     }
+    
     SRAM_CS1 = 1;
     spi_tx_wait_init(data_buffer, count);
 }
@@ -63,11 +64,13 @@ void hardware_sram_init(int sram_mode){
     TRISAbits.TRISA0    = sram_mode;
     TRISAbits.TRISA1    = sram_mode;   
     TRISAbits.TRISA2    = sram_mode;   
-    TRISAbits.TRISA3    = sram_mode;   
+    TRISAbits.TRISA3    = sram_mode;
+    
     TRISAbits.TRISA4    = sram_mode;   
     TRISBbits.TRISB5    = sram_mode;
     TRISAbits.TRISA6    = sram_mode;   
     TRISAbits.TRISA7    = sram_mode;   
+    
     TRISBbits.TRISB8    = sram_mode;   
     TRISBbits.TRISB9    = sram_mode;   
     TRISBbits.TRISB14   = sram_mode;  
@@ -86,21 +89,24 @@ void hardware_sram_init(int sram_mode){
 * Returns:
 * None
  ******************************************************************************/
-void sram_write(unsigned int data){   
-    LATAbits.LATA0  = (data >> 0) & 1U;     // Bit 0 -  IO 0
+void sram_write(unsigned int data){
+    SRAM_CS1 = 1;       // Check CS is high before changing IO pin states.
+    Nop();
+    Nop();
+    Nop();
+    
+    LATAbits.LATA0  =  data & 1U;     // Bit 0 -  IO 0
     LATAbits.LATA1  = (data >> 1) & 1U;     // Bit 1 -  IO 1
     LATAbits.LATA2  = (data >> 2) & 1U;     // Bit 2 -  IO 2
     LATAbits.LATA3  = (data >> 3) & 1U;     // Bit 3 -  IO 3
+    
     LATAbits.LATA4  = (data >> 4) & 1U;     // Bit 4 -  IO 4
-    
     LATBbits.LATB5  = (data >> 5) & 1U;     // Bit 5 -  IO 5
-    
     LATAbits.LATA6  = (data >> 6) & 1U;     // Bit 6 -  IO 6
     LATAbits.LATA7  = (data >> 7) & 1U;     // Bit 7 -  IO 7    
     
     LATBbits.LATB8  = (data >> 8) & 1U;     // Bit 8 -  IO 8
     LATBbits.LATB9  = (data >> 9) & 1U;     // Bit 9 -  IO 9
-    
     LATBbits.LATB14 = (data >> 10) & 1U;    // Bit 10 - IO 10
     LATBbits.LATB15 = (data >> 11) & 1U;    // Bit 11 - IO 11
     
@@ -118,23 +124,33 @@ void sram_write(unsigned int data){
     Nop();
     Nop();
     SRAM_CS1 = 1;
+    Nop();
+    Nop();
+    Nop();
+    Nop();
+    Nop();
+    Nop();    
 }
 
 unsigned int sram_read(void){
-    unsigned long result, port_a_bits, port_b_bits;
-    unsigned long mask_a;
-    unsigned long mask_b_u, mask_b_l;
+    unsigned int result;
+   
+    result = 0;
     
-    mask_a      = 0x00DF;
-    mask_b_u    = 0xC000;   // IO10/IO11 on RB14/RB15
-    mask_b_l    = 0x0320;
+    result =           PORTAbits.RA0;
+    result = result | (PORTAbits.RA1 << 1);
+    result = result | (PORTAbits.RA2 << 2);
+    result = result | (PORTAbits.RA3 << 3);
     
-    port_a_bits = (PORTA & mask_a);
+    result = result | (PORTAbits.RA4 << 4);
+    result = result | (PORTBbits.RB5 << 5);
+    result = result | (PORTAbits.RA6 << 6);
+    result = result | (PORTAbits.RA7 << 7);
     
-    port_b_bits = (PORTB & mask_b_u) >> 4;
-    port_b_bits |=(PORTB & mask_b_l);
-    
-    result = port_a_bits | port_b_bits;
+    result = result | (PORTBbits.RB8 << 8);
+    result = result | (PORTBbits.RB9 << 9);
+    result = result | (PORTBbits.RB14 << 10);
+    result = result | (PORTBbits.RB15 << 11);
     
     return result;
 }

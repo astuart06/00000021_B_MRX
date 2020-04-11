@@ -19,7 +19,7 @@
 
 // FOSC
 #pragma config POSCMOD = NONE           // Primary Oscillator Configuration bits (Primary oscillator disabled)
-#pragma config OSCIOFNC = ON            // CLKO Enable Configuration bit (CLKO output signal is active on the OSCO pin)
+#pragma config OSCIOFNC = OFF            // CLKO Enable Configuration bit (CLKO output signal is active on the OSCO pin)
 #pragma config POSCFREQ = HS            // Primary Oscillator Frequency Range Configuration bits (Primary oscillator/external clock input frequency greater than 8MHz)
 #pragma config SOSCSEL = SOSCHP         // SOSC Power Selection Configuration bits (Secondary Oscillator configured for high-power operation)
 #pragma config FCKSM = CSDCMD           // Clock Switching and Monitor Selection (Both Clock Switching and Fail-safe Clock Monitor are disabled)

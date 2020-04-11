@@ -42,6 +42,7 @@ device_event_t          next_event;
 unsigned char           spi_data_tx[USB_PACKET_MAX];
 unsigned char           spi_data_rx[8];
 unsigned char           spi_data_dummy[USB_PACKET_MAX];
+
 /*******************************************************************************
 * INTERRUPTS
 *******************************************************************************/
@@ -49,7 +50,6 @@ void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt(){
     // ADC conversion started automatically on +ve edge on INT0 (TRIGGER_ADC).
     // So just tell the master we are 'busy' and clear the flag.
     // ***NOT CALLED AT THE MOMENT***
-    //SLAVE_STATE = SLAVE_ACTIVE;
     
     IFS0bits.INT0IF = 0;        // Clear the interrupt flag    
 }
@@ -57,13 +57,13 @@ void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt(){
 // ADC1 interrupt occurs after every conversion is complete (SMPI = 0).
 void __attribute__((__interrupt__, auto_psv)) _ADC1Interrupt(){
     unsigned int adc_value;
-    static unsigned int dummy_adc_value = 0;
+    static unsigned int dummy_adc_value = 0x0002;
     
     SLAVE_STATE = SLAVE_ACTIVE;
     
     adc_value = ADC1BUF0;
     sram_write(dummy_adc_value);
-    dummy_adc_value++;
+    dummy_adc_value += 0x0001;
     
     SLAVE_STATE = SLAVE_IDLE;
     IFS0bits.AD1IF = 0;        // Clear the interrupt flag    
@@ -97,16 +97,30 @@ void int0_init(void){
 * None
  ******************************************************************************/
 void peripheral_io_init(){
-    ANSBbits.ANSB2 = 0;
-    ANSBbits.ANSB4 = 0;
-    ANSBbits.ANSB15 = 0;
-    ANSBbits.ANSB3 = 0;
-    ANSBbits.ANSB4 = 0;
+    // Disable analog inputs on the following pins...
+    ANSAbits.ANSA0 = 0;     // IO 0
+    ANSAbits.ANSA1 = 0;     // IO 1
+    ANSAbits.ANSA2 = 0;     // IO 2
+    ANSAbits.ANSA3 = 0;     // IO 3
+    
+    ANSBbits.ANSB2 = 0;     // SDA2
+    ANSBbits.ANSB3 = 0;     // SCL2
+    ANSBbits.ANSB4 = 0;     // SPI CS
+    ANSBbits.ANSB14 = 0;    // IO 10
+    ANSBbits.ANSB15 = 0;    // IO 11
+        
+    ODCA = 0;
     ODCB = 0;    
     
-    TRISBbits.TRISB4 = 1;           // SPI CS as an input. 
-    TRISBbits.TRISB7 = 1;           // TRIGGER_ADC as an input.
-    TRISBbits.TRISB1 = 0;           // SLAVE_STATE as an output.
+    TRISBbits.TRISB4 = 1;   // SPI CS as an input. 
+    TRISBbits.TRISB7 = 1;   // TRIGGER_ADC as an input.
+    TRISBbits.TRISB1 = 1;   // SLAVE_STATE as an input. Set as an output when 
+                            // required, this will allow programming in idle state.
+    CM1CONbits.CON = 0;
+    REFOCONbits.ROEN = 0;
+    
+    RCFGCALbits.RTCEN = 0;
+    I2C1CONbits.I2CEN = 0;
 }
 /*******************************************************************************
 * MAIN
@@ -120,7 +134,7 @@ int main(){
     hardware_sram_init(SRAM_WRITE); // Default to write mode. (remove when done by handler).
     
     SLAVE_STATE = SLAVE_IDLE;               
-    
+        
     next_state = ST_SPI_RX;
     while(1){      
         switch(next_state){
@@ -138,10 +152,13 @@ int main(){
                 break;
                 
             case ST_SRAM_READ:
+                TRISBbits.TRISB1 = 0;   
                 sram_read_handler();
+                TRISBbits.TRISB1 = 1;
                 break;
                 
             case ST_ADC_EN:
+                //dummy_adc_value = 0x0210;
                 adc_en_handler();                
                 break;             
                 

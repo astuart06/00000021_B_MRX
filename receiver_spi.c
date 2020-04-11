@@ -36,6 +36,7 @@ void peripheral_spi_init(){
     SPI1CON1bits.PPRE = 0b01;   
     
     SPI1CON1bits.MSTEN = 0;     // Slave mode.
+    SPI1CON1bits.SMP = 0;       // Must be cleared in slave mode.
     SPI1CON1bits.SSEN = 0;      // CS manually monitored.
     SPI1CON1bits.MODE16 = 0;    // 8-bit mode.
     SPI1CON2bits.SPIBEN = 1;    // Enable the enhanced buffer.
@@ -52,7 +53,8 @@ void peripheral_spi_init(){
     SPI1STATbits.SPIEN = 1;     // Enable the SPI module.    
 }
 
-unsigned char spi_rx_wait(void){   
+unsigned char spi_rx_wait(void){
+    // spi_transfer is a blocking function. It does not return untill 8 bytes are rx'd.
     spi_transfer(spi_data_dummy, spi_data_rx, 8);
     return spi_data_rx[USB_PACKET_CMD];  // Return command byte.
 }
@@ -62,12 +64,7 @@ void spi_tx_wait_init(unsigned char * data_buffer, int length){
     next_state = ST_SPI_TX;
 }
 
-void spi_tx_wait_handler(void){
-    while(TRIGGER_ADC == 0);    // Wait until master sets trigger high.
-    SLAVE_STATE = SLAVE_ACTIVE; // Tell master we are active.   
-    Nop();
-    SLAVE_STATE = SLAVE_IDLE;     // Once set to idle, master will initiate SPI transfer.
-    
+void spi_tx_wait_handler(void){      
     spi_transfer(spi_data_tx, spi_data_dummy, spi_data_rx[USB_PACKET_RXBYTES]);
 }
 
