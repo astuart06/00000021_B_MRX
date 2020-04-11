@@ -65,14 +65,11 @@ void adc_en_handler(void){
     state &= 1;                                 // Check it is just one bit.
     
     if(state == 1){
-        hardware_sram_init(SRAM_WRITE);  // Select SRAM write mode if the ADC is running.
-        TRISBbits.TRISB1 = 0;
+        hardware_sram_init(SRAM_WRITE);         // Select SRAM write mode if the ADC is running.
     }  
     else{
         hardware_sram_init(SRAM_READ);  
-        TRISBbits.TRISB1 = 1;
     }
-    
     AD1CON1bits.ADON = state;                   // Enable/disable the ADC module.
     
     spi_tx_wait_init(spi_data_rx, 8);

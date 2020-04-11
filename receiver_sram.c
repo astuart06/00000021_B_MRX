@@ -27,18 +27,25 @@ void sram_read_handler(void){
     count = spi_data_rx[USB_PACKET_RXBYTES];
     hardware_sram_init(SRAM_READ);
     SRAM_CS1 = 0;
-    
+
+#ifdef DEBUG_SLAVE
     for(i = 0; i < (count / 2); i++){
         while(TRIGGER_ADC == 0);        // Wait for trigger before beginning read.
-        SLAVE_STATE = SLAVE_ACTIVE;        
-        
         result = sram_read();        
         data_buffer[2*i]        = (result & 0xFF00) >> 8; // MSB
         data_buffer[(2*i)+1]    = result & 0x00FF;      // LSB
-        
+    }
+
+#else
+    for(i = 0; i < (count / 2); i++){
+        while(TRIGGER_ADC == 0);        // Wait for trigger before beginning read.
+        SLAVE_STATE = SLAVE_ACTIVE;                
+        result = sram_read();        
+        data_buffer[2*i]        = (result & 0xFF00) >> 8; // MSB
+        data_buffer[(2*i)+1]    = result & 0x00FF;      // LSB
         SLAVE_STATE = SLAVE_IDLE;
     }
-    
+#endif
     SRAM_CS1 = 1;
     spi_tx_wait_init(data_buffer, count);
 }

@@ -58,14 +58,18 @@ void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt(){
 void __attribute__((__interrupt__, auto_psv)) _ADC1Interrupt(){
     unsigned int adc_value;
     static unsigned int dummy_adc_value = 0x0002;
-    
-    SLAVE_STATE = SLAVE_ACTIVE;
-    
+
+#ifdef DEBUG_SLAVE
     adc_value = ADC1BUF0;
     sram_write(dummy_adc_value);
-    dummy_adc_value += 0x0001;
-    
-    SLAVE_STATE = SLAVE_IDLE;
+    dummy_adc_value += 0x0001;    
+#else
+    SLAVE_STATE = SLAVE_ACTIVE;   
+    adc_value = ADC1BUF0;
+    sram_write(dummy_adc_value);
+    dummy_adc_value += 0x0001;    
+    SLAVE_STATE = SLAVE_IDLE;    
+#endif    
     IFS0bits.AD1IF = 0;        // Clear the interrupt flag    
 }
 
@@ -114,8 +118,9 @@ void peripheral_io_init(){
     
     TRISBbits.TRISB4 = 1;   // SPI CS as an input. 
     TRISBbits.TRISB7 = 1;   // TRIGGER_ADC as an input.
-    TRISBbits.TRISB1 = 1;   // SLAVE_STATE as an input. Set as an output when 
-                            // required, this will allow programming in idle state.
+#ifndef SLAVE_DEBUG    
+    TRISBbits.TRISB1 = 0;   // SLAVE_STATE as an output.
+#endif                            
     CM1CONbits.CON = 0;
     REFOCONbits.ROEN = 0;
     
@@ -151,10 +156,8 @@ int main(){
                 next_state = ST_SPI_TX;
                 break;
                 
-            case ST_SRAM_READ:
-                TRISBbits.TRISB1 = 0;   
+            case ST_SRAM_READ:  
                 sram_read_handler();
-                TRISBbits.TRISB1 = 1;
                 break;
                 
             case ST_ADC_EN:

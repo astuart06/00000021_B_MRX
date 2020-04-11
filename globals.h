@@ -12,6 +12,8 @@
 #define  FCY    8000000UL
 #include "libpic30.h"
 
+#define DEBUG_SLAVE     // To debug slave SLAVE_STATE cannot be used.
+
 /*******************************************************************************
 * DEFINITIONS
 *******************************************************************************/
