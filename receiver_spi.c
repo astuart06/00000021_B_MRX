@@ -53,10 +53,20 @@ void peripheral_spi_init(){
     SPI1STATbits.SPIEN = 1;     // Enable the SPI module.    
 }
 
-unsigned char spi_rx_wait(void){
+spi_rx_wait_init(void){
+    next_state = ST_SPI_RX;
+}
+
+void spi_rx_wait_handler(void){   
     // spi_transfer is a blocking function. It does not return until 8 bytes are rx'd.
     spi_transfer(spi_data_dummy, spi_data_rx, 8);
-    return spi_data_rx[USB_PACKET_CMD];  // Return command byte.
+    next_event = spi_data_rx[USB_PACKET_CMD];  // Return command byte.
+    
+    if(next_event == EV_CMD_POT)    digipot_init();          
+    if(next_event == EV_CMD_SRAM)   sram_read_init();
+    if(next_event == EV_CMD_ADC)    adc_en_init();
+    if(next_event == EV_CMD_ID)     slave_id_init();
+
 }
 
 void spi_tx_wait_init(unsigned char * data_buffer, int length){

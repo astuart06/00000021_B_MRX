@@ -18,7 +18,8 @@ void peripheral_spi_init(void);
 
 void spi_transfer(unsigned char *tx_data, unsigned char *rx_data, unsigned char size_bytes);
 
-unsigned char spi_rx_wait(void);
+void spi_rx_wait_init(void);
+void spi_rx_wait_handler(void);
 
 void spi_tx_wait_init(unsigned char * data_buffer, int length);
 void spi_tx_wait_handler(void);

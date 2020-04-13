@@ -30,7 +30,7 @@ void slave_id_handler(void){
     data_buffer[2] = '.';
     data_buffer[3] = '2';
     data_buffer[4] = '.';
-    data_buffer[5] = '6';
+    data_buffer[5] = '7';
     data_buffer[6] = 'r';
     data_buffer[7] = 'c';
             

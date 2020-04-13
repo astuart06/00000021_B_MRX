@@ -145,12 +145,7 @@ int main(){
     while(1){      
         switch(next_state){
             case ST_SPI_RX:
-                next_event = spi_rx_wait();
-                // spi_rx_wait() is blocking so their will always be a new event.
-                if(next_event == EV_CMD_POT)    digipot_init();          
-                if(next_event == EV_CMD_SRAM)   sram_read_init();
-                if(next_event == EV_CMD_ADC)    adc_en_init();
-                if(next_event == EV_CMD_ID)     slave_id_init();
+                spi_rx_wait_handler();      // spi_rx_wait_handler() is blocking so it wait for an event.
                 break;
 
             case ST_SPI_TX:
