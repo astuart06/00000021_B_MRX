@@ -145,12 +145,11 @@ int main(){
     while(1){      
         switch(next_state){
             case ST_SPI_RX:
-                spi_rx_wait_handler();      // spi_rx_wait_handler() is blocking so it wait for an event.
+                spi_rx_wait_handler();      // spi_rx_wait_handler() is blocking so it waits for an event.
                 break;
 
             case ST_SPI_TX:
                 spi_tx_wait_handler();
-                next_state = ST_SPI_RX;
                 break;                
                 
             case ST_DIGIPOT_RW:

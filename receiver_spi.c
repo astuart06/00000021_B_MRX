@@ -76,6 +76,7 @@ void spi_tx_wait_init(unsigned char * data_buffer, int length){
 
 void spi_tx_wait_handler(void){      
     spi_transfer(spi_data_tx, spi_data_dummy, spi_data_rx[USB_PACKET_RXBYTES]);
+    spi_rx_wait_init();
 }
 
 /*******************************************************************************
