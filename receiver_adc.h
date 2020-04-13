@@ -14,7 +14,10 @@
 * FUNCTION PROTOTYPES
 *******************************************************************************/
 void peripheral_adc_init(void);
+
+void adc_en_init(void);
 void adc_en_handler(void);
+
 int adc_read(void);
 
 #endif // RECEIVER_ADC_H

@@ -17,6 +17,7 @@
 /*******************************************************************************
 * FUNCTION PROTOTYPES
 *******************************************************************************/
+void sram_read_init(void);
 void sram_read_handler(void);
 
 void hardware_sram_init(int sram_mode);

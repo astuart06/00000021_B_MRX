@@ -18,6 +18,10 @@
 #include "protocol.h"
 #include "receiver_spi.h"
 
+void sram_read_init(void){
+    next_state = ST_SRAM_READ;
+}
+
 void sram_read_handler(void){
     unsigned int i;
     unsigned int count;

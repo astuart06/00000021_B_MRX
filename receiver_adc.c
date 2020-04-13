@@ -58,6 +58,10 @@ void peripheral_adc_init(){
     AD1CON1bits.ADON = 0;       // Module disabled, cmd from Host to turn it on.
 }
 
+void adc_en_init(void){
+    next_state = ST_ADC_EN;
+}
+
 void adc_en_handler(void){
     unsigned char state;
     

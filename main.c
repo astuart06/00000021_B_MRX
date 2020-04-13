@@ -147,10 +147,10 @@ int main(){
             case ST_SPI_RX:
                 next_event = spi_rx_wait();
                 // spi_rx_wait() is blocking so their will always be a new event.
-                if(next_event == EV_CMD_POT)    next_state = ST_DIGIPOT_RW;          
-                if(next_event == EV_CMD_SRAM)   next_state = ST_SRAM_READ;
-                if(next_event == EV_CMD_ADC)    next_state = ST_ADC_EN;
-                if(next_event == EV_CMD_ID)     next_state = ST_SLAVE_ID;
+                if(next_event == EV_CMD_POT)    digipot_init();          
+                if(next_event == EV_CMD_SRAM)   sram_read_init();
+                if(next_event == EV_CMD_ADC)    adc_en_init();
+                if(next_event == EV_CMD_ID)     slave_id_init();
                 break;
 
             case ST_SPI_TX:
@@ -160,7 +160,6 @@ int main(){
                 
             case ST_DIGIPOT_RW:
                 digipot_handler();
-                next_state = ST_SPI_TX;
                 break;
                 
             case ST_SRAM_READ:  
