@@ -54,7 +54,7 @@ void peripheral_spi_init(){
 }
 
 unsigned char spi_rx_wait(void){
-    // spi_transfer is a blocking function. It does not return untill 8 bytes are rx'd.
+    // spi_transfer is a blocking function. It does not return until 8 bytes are rx'd.
     spi_transfer(spi_data_dummy, spi_data_rx, 8);
     return spi_data_rx[USB_PACKET_CMD];  // Return command byte.
 }
@@ -79,7 +79,7 @@ void spi_tx_wait_handler(void){
 * Returns:
 * 
  ******************************************************************************/
-void spi_transfer(unsigned char *tx_data, unsigned char *rx_data, unsigned int size_bytes){
+void spi_transfer(unsigned char *tx_data, unsigned char *rx_data, unsigned char size_bytes){
     unsigned int bytes_txd, bytes_rxd;
     
     bytes_txd = 0;

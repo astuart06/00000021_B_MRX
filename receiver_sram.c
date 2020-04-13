@@ -20,11 +20,11 @@
 
 void sram_read_handler(void){
     unsigned int i;
-    int count;
+    unsigned int count;
     unsigned int result;
     unsigned char data_buffer[USB_PACKET_MAX];
     
-    count = spi_data_rx[USB_PACKET_RXBYTES];
+    count = (unsigned int)spi_data_rx[USB_PACKET_RXBYTES];
     hardware_sram_init(SRAM_READ);
     SRAM_CS1 = 0;
 

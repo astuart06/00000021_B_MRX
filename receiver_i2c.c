@@ -39,7 +39,9 @@ void peripheral_i2c_init(){
 }
 
 void digipot_handler(void){
-    
+
+
+    spi_tx_wait_init(spi_data_rx, 8);
 }
 
 /******************************************************************************

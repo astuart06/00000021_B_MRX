@@ -15,6 +15,7 @@
 #include "receiver_i2c.h"
 #include "receiver_spi.h"
 #include "receiver_sram.h"
+#include "receiver_misc.h"
 
 #include "protocol.h"
 #include "globals.h"
@@ -57,7 +58,7 @@ void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt(){
 // ADC1 interrupt occurs after every conversion is complete (SMPI = 0).
 void __attribute__((__interrupt__, auto_psv)) _ADC1Interrupt(){
     unsigned int adc_value;
-    static unsigned int dummy_adc_value = 0x0002;
+    static unsigned int dummy_adc_value = 0x0000;
 
 #ifdef DEBUG_SLAVE
     adc_value = ADC1BUF0;
@@ -149,7 +150,13 @@ int main(){
                 if(next_event == EV_CMD_POT)    next_state = ST_DIGIPOT_RW;          
                 if(next_event == EV_CMD_SRAM)   next_state = ST_SRAM_READ;
                 if(next_event == EV_CMD_ADC)    next_state = ST_ADC_EN;
+                if(next_event == EV_CMD_ID)     next_state = ST_SLAVE_ID;
                 break;
+
+            case ST_SPI_TX:
+                spi_tx_wait_handler();
+                next_state = ST_SPI_RX;
+                break;                
                 
             case ST_DIGIPOT_RW:
                 digipot_handler();
@@ -160,14 +167,12 @@ int main(){
                 sram_read_handler();
                 break;
                 
-            case ST_ADC_EN:
-                //dummy_adc_value = 0x0210;
+            case ST_ADC_EN:                
                 adc_en_handler();                
-                break;             
+                break;
                 
-            case ST_SPI_TX:
-                spi_tx_wait_handler();
-                next_state = ST_SPI_RX;
+            case ST_SLAVE_ID:
+                slave_id_handler();
                 break;
         }
     }

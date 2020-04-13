@@ -39,7 +39,8 @@ typedef enum{
     EV_CMD_NONE,
     EV_CMD_POT  = 0x10,
     EV_CMD_SRAM = 0x11,
-    EV_CMD_ADC  = 0x12
+    EV_CMD_ADC  = 0x12,
+    EV_CMD_ID   = 0x13
 } device_event_t;
 
 typedef enum{
@@ -47,7 +48,8 @@ typedef enum{
     ST_SPI_TX,
     ST_DIGIPOT_RW,
     ST_SRAM_READ,
-    ST_ADC_EN
+    ST_ADC_EN,
+    ST_SLAVE_ID
 } device_state_t;
 
 extern device_event_t next_event;
