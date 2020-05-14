@@ -18,6 +18,8 @@
 #include "globals.h"
 #include "receiver_i2c.h"
 #include "receiver_sram.h"
+#include "receiver_spi.h"
+#include "receiver_misc.h"
 
 
 /******************************************************************************
@@ -53,7 +55,7 @@ void peripheral_spi_init(){
     SPI1STATbits.SPIEN = 1;     // Enable the SPI module.    
 }
 
-spi_rx_wait_init(void){
+void spi_rx_wait_init(void){
     next_state = ST_SPI_RX;
 }
 

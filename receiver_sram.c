@@ -101,6 +101,8 @@ void hardware_sram_init(int sram_mode){
 * None
  ******************************************************************************/
 void sram_write(unsigned int data){
+    int i;
+    
     SRAM_CS1 = 1;       // Check CS is high before changing IO pin states.
     Nop();
     Nop();
@@ -121,26 +123,12 @@ void sram_write(unsigned int data){
     LATBbits.LATB14 = (data >> 10) & 1U;    // Bit 10 - IO 10
     LATBbits.LATB15 = (data >> 11) & 1U;    // Bit 11 - IO 11
     
-    Nop();
-    Nop();
-    Nop();
-    Nop();
-    Nop();
-    Nop();
-    SRAM_CS1 = 0;   // Latch the data into memory using the CS signal.
-    Nop();
-    Nop();
-    Nop();
-    Nop();
-    Nop();
-    Nop();
+    // Latch the data into memory using the CS signal.
+    for(i = 0; i < 6; i++)  Nop();
+    SRAM_CS1 = 0;   
+    for(i = 0; i < 6; i++)  Nop();
     SRAM_CS1 = 1;
-    Nop();
-    Nop();
-    Nop();
-    Nop();
-    Nop();
-    Nop();    
+    for(i = 0; i < 6; i++)  Nop();
 }
 
 unsigned int sram_read(void){

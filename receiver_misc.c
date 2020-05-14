@@ -18,6 +18,7 @@
 #include "globals.h"
 
 #include "receiver_spi.h"
+#include "checksum.h"
 
 void slave_id_init(void){
     next_state = ST_SLAVE_ID;
@@ -25,14 +26,9 @@ void slave_id_init(void){
 void slave_id_handler(void){
     unsigned char data_buffer[8];
     
-    data_buffer[0] = 'V';
-    data_buffer[1] = '2';
-    data_buffer[2] = '.';
-    data_buffer[3] = '2';
-    data_buffer[4] = '.';
-    data_buffer[5] = '7';
-    data_buffer[6] = 'r';
-    data_buffer[7] = 'c';
+    // Currently the version string must not be longer than 7 bytes.
+    strcpy(data_buffer, 'V2.2.8d');
+    data_buffer[7] = checksum(data_buffer, 7, 256);
             
    spi_tx_wait_init(data_buffer, 8);
 }
