@@ -69,10 +69,10 @@ void adc_en_handler(void){
     state &= 1;                                 // Check it is just one bit.
     
     if(state == 1){
-        hardware_sram_init(SRAM_WRITE);         // Select SRAM write mode if the ADC is running.
-    }  
+        hardware_sram_init(SRAM_WRITE);         // Select SRAM write mode if the 
+    }                                           // ADC is running.
     else{
-        hardware_sram_init(SRAM_READ);  
+        hardware_sram_init(SRAM_READ);          
     }
     AD1CON1bits.ADON = state;                   // Enable/disable the ADC module.
     
