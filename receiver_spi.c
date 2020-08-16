@@ -16,11 +16,11 @@
 
 #include "protocol.h"
 #include "globals.h"
+#include "receiver_adc.h"
 #include "receiver_i2c.h"
-#include "receiver_sram.h"
-#include "receiver_spi.h"
 #include "receiver_misc.h"
-
+#include "receiver_spi.h"
+#include "receiver_sram.h"
 
 /******************************************************************************
 * peripheral_spi_init
@@ -85,12 +85,15 @@ void spi_tx_wait_handler(void){
 * spi_transfer
 * 
 * Description:
-* 
+*   This is a blocking function, it will not return until correct number of
+*   bytes have been written/read to/from SPI1BUF.
 *
 * Inputs:
-*      
+*   tx_data - Data to transmit to master. Use spi_data_dummy if waiting for data
+*             from master.  
+*   rx_data - 
 * Returns:
-* 
+*   None
  ******************************************************************************/
 void spi_transfer(unsigned char *tx_data, unsigned char *rx_data, unsigned char size_bytes){
     unsigned int bytes_txd, bytes_rxd;
