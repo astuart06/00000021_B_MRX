@@ -72,7 +72,7 @@ void adc_en_handler(void){
         hardware_sram_init(SRAM_WRITE);         // Select SRAM write mode if the 
     }                                           // ADC is running.
     else{
-        hardware_sram_init(SRAM_READ);          
+        hardware_sram_init(SRAM_READ);          // Default mode when idle.          
     }
     AD1CON1bits.ADON = state;                   // Enable/disable the ADC module.
     

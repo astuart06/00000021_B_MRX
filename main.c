@@ -58,7 +58,7 @@ void __attribute__((__interrupt__, auto_psv)) _INT0Interrupt(){
 // ADC1 interrupt occurs after every conversion is complete (SMPI = 0).
 void __attribute__((__interrupt__, auto_psv)) _ADC1Interrupt(){
     unsigned int adc_value;
-    static unsigned int dummy_adc_value = 0x0000;
+    static unsigned int dummy_adc_value = 0x0010;
 
 #ifdef DEBUG_SLAVE
     adc_value = ADC1BUF0;
