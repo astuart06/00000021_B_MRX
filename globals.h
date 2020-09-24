@@ -12,18 +12,19 @@
 #define  FCY    8000000UL
 #include "libpic30.h"
 
-#define DEBUG_SLAVE     // To debug slave SLAVE_STATE cannot be used.
-
 /*******************************************************************************
 * DEFINITIONS
 *******************************************************************************/
 #define TRIGGER_ADC     PORTBbits.RB7
-#define SLAVE_STATE     LATBbits.LATB1   
+#define SLAVE_STATE     LATBbits.LATB3
+#define DEBUG_RB2       LATBbits.LATB2
 
 // These are opposite to the master as the open collector transistor on the
 // output inverts the logic.
 #define SLAVE_ACTIVE    1
 #define SLAVE_IDLE      0
+
+#define ADC_START_VALUE 0xAA;
 
 /*******************************************************************************
 * VARIABLES
@@ -31,6 +32,8 @@
 extern unsigned char spi_data_rx[USB_PACKET_SIZE];
 extern unsigned char spi_data_tx[USB_PACKET_MAX];
 extern unsigned char spi_data_dummy[USB_PACKET_MAX];
+
+extern unsigned int dummy_adc_value;
 
 /*******************************************************************************
 * ENUMS

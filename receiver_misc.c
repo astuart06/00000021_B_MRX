@@ -25,7 +25,7 @@ void slave_id_init(void){
     next_state = ST_SLAVE_ID;
 }
 void slave_id_handler(void){
-    unsigned char data_buffer[8] = "V2.3.1e";
+    unsigned char data_buffer[8] = "V2.3.3";
     
     // The version string must be 7 bytes long with the 8th bit for a checksum.
     //strcpy(data_buffer, 'V2.2.9');

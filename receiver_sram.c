@@ -28,31 +28,41 @@ void sram_read_handler(void){
     unsigned int count;
     unsigned int result;
     unsigned char data_buffer[USB_PACKET_MAX];
+    unsigned int result_buffer[USB_PACKET_MAX];
     
-    count = (unsigned int)spi_data_rx[USB_PACKET_RXBYTES - 1]; // -1 for chksum.
-    hardware_sram_init(SRAM_READ);
-    SRAM_CS1 = 0;
-
-#ifdef DEBUG_SLAVE
-    for(i = 0; i < count; i++){
-        while(TRIGGER_ADC == 0);        // Wait for trigger before beginning read.
-        __delay_us(10);
-        result = sram_read();        
-        data_buffer[i] = result;        // LSB only, discard MSB for now.
-    }
-
-#else
-    for(i = 0; i < count; i++){
-        while(TRIGGER_ADC == 0);        // Wait for trigger before beginning read.
-        SLAVE_STATE = SLAVE_ACTIVE;                
-        result = sram_read();        
-        data_buffer[i] = result;        // LSB
-        SLAVE_STATE = SLAVE_IDLE;
-    }
-#endif
-    SRAM_CS1 = 1;
-    data_buffer[16] = checksum(data_buffer, 16, 256);
-    spi_tx_wait_init(data_buffer, count);
+//    DEBUG_RB2 = 1;
+//    
+//    count = (unsigned int)spi_data_rx[USB_PACKET_RXBYTES] - 1; // -1 for chksum.
+//    hardware_sram_init(SRAM_READ);
+//
+//    for(i = 0; i < count; i = i + 2){
+//        Nop();
+//        Nop();          
+//        while(TRIGGER_ADC == 0);
+//        SLAVE_STATE = SLAVE_ACTIVE;                
+//        result = sram_read();
+//        result_buffer[i] = result;
+//        //result_buffer[i] = result;
+//        data_buffer[i]      = (result >> 8);// & 0x0F;   
+//        data_buffer[i+1]    =  result       & 0xFF;
+//        SLAVE_STATE = SLAVE_IDLE;
+//    }
+//    
+//    Nop();
+//    
+//        SRAM_CS1 = 1;
+//    data_buffer[16] = checksum(data_buffer, 16, 256);
+//    spi_tx_wait_init(data_buffer, count + 1);
+    spi_tx_wait_init(spi_data_rx, count + 1);
+//    
+//    dummy_adc_value = ADC_START_VALUE;
+//    DEBUG_RB2 = 0;
+    
+    Nop();
+    Nop();
+    Nop();
+    Nop();
+    Nop();
 }
 
 /******************************************************************************
@@ -72,6 +82,10 @@ void hardware_sram_init(int sram_mode){
                                 // also sets IO pins to high-Z.
     Nop();
     Nop();
+    Nop();
+    Nop();
+    Nop();
+    
     
     TRISAbits.TRISA0    = sram_mode;
     TRISAbits.TRISA1    = sram_mode;   
@@ -104,12 +118,10 @@ void hardware_sram_init(int sram_mode){
 void sram_write(unsigned int data){
     int i;
     
-    SRAM_CS1 = 1;       // Check CS is high before changing IO pin states.
-    Nop();
-    Nop();
-    Nop();
+    SRAM_CS1 = 0;       // Check CS is high before changing IO pin states.
+    for(i = 0; i < 10; i++)  Nop();
     
-    LATAbits.LATA0  =  data & 1U;     // Bit 0 -  IO 0
+    LATAbits.LATA0  =  data & 1U;           // Bit 0 -  IO 0
     LATAbits.LATA1  = (data >> 1) & 1U;     // Bit 1 -  IO 1
     LATAbits.LATA2  = (data >> 2) & 1U;     // Bit 2 -  IO 2
     LATAbits.LATA3  = (data >> 3) & 1U;     // Bit 3 -  IO 3
@@ -124,18 +136,19 @@ void sram_write(unsigned int data){
     LATBbits.LATB14 = (data >> 10) & 1U;    // Bit 10 - IO 10
     LATBbits.LATB15 = (data >> 11) & 1U;    // Bit 11 - IO 11
     
-    // Latch the data into memory using the CS signal.
-    for(i = 0; i < 6; i++)  Nop();
-    SRAM_CS1 = 0;   
-    for(i = 0; i < 6; i++)  Nop();
+    // Latch the data into memory using the CS signal.  
+    for(i = 0; i < 10; i++)  Nop();
     SRAM_CS1 = 1;
-    for(i = 0; i < 6; i++)  Nop();
+    for(i = 0; i < 10; i++)  Nop();
 }
 
 unsigned int sram_read(void){
+    unsigned int i;
     unsigned int result;
    
-    result = 0;
+    for(i = 0; i < 10; i++)  Nop();
+    SRAM_CS1 = 0;
+    for(i = 0; i < 10; i++)  Nop();
     
     result =           PORTAbits.RA0;
     result = result | (PORTAbits.RA1 << 1);
@@ -151,6 +164,10 @@ unsigned int sram_read(void){
     result = result | (PORTBbits.RB9 << 9);
     result = result | (PORTBbits.RB14 << 10);
     result = result | (PORTBbits.RB15 << 11);
+    
+    for(i = 0; i < 10; i++)  Nop();
+    SRAM_CS1 = 1;
+    for(i = 0; i < 10; i++)  Nop();
     
     return result;
 }
